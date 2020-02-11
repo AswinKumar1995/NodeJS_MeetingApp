@@ -13,6 +13,7 @@ const AuthModel = mongoose.model("Auth")
 const ResetTokenModel = mongoose.model("ResetToken")
 const crypto = require("crypto")
 const nodemailer = require('nodemailer')
+const sgTransport = require('nodemailer-sendgrid-transport');
 
 // get all users details
 
@@ -98,6 +99,8 @@ let sendResetPasswordMail = (req, res) => {
         })
     }
 
+    //creating token to store in database as verify token for resetting password
+
     let createToken = (userDetails) => {
         return new Promise((resolve, reject) => {
             console.log("Create token for resetting password")
@@ -112,21 +115,19 @@ let sendResetPasswordMail = (req, res) => {
                 }
             })
             ResetTokenModel.find({ userId: userDetails.userId, resettoken: { $ne: resettoken.resettoken } }).remove().exec();
-            // resolve()
+            
 
-            var transporter = nodemailer.createTransport({
-                // service: 'gmail',
-                // port: 465,
-                host: 'smtp.gmail.com',
-                port: 587,
-                secure: false,
-                requireTLS: true,
+
+
+            var options = {
                 auth: {
-                    user: '***',
-                    pass: '***'
+                    api_user: '***',
+                    api_key: '****'
                 }
-            });
-
+            }
+            
+            var transporter = nodemailer.createTransport(sgTransport(options));
+            
             var mailOptions = {
                 from: '****',
                 to: req.body.email,

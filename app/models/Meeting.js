@@ -23,7 +23,9 @@ let meetingSchema = new Schema({
         afterEnd:{type:Boolean,default:true}
     },
     createdOn:{type:Date,default:Date.now},
-    modifiedOn:{type:Date,default:Date.now}
+    modifiedOn:{type:Date,default:Date.now},
+
+    mailAlert:{type:Boolean,default:false}
 })
 
 mongoose.model("Meetings",meetingSchema)

@@ -117,26 +117,46 @@ let setServer = (server) => {
             //sending alert to userId
             myIo.emit(data.userId,data)
         })
+        socket.on("edit-meeting",(data) => {
+            console.log("socket meeting received")
+            console.log(data)
+            // data["meetingId"] = shortid.generate()
+            // console.log(data)
+            //event to save the chats
+            setTimeout( function (){
+                eventEmitter.emit("update-meeting",data)
+            },2000)
+            data['job'] = 'edit-meeting'
+            //sending alert to userId
+            myIo.emit(data.userId,data)
+        })
 //listening to snooze alert and setting timeout for 10 sec 
         socket.on("snooze-alert",(meetingData) => {
             setTimeout( function (){
-                let currentTime = getRoundedDate(1, new Date());
+                let datenow = new Date()
+                let datestart = new Date(meetingData.start)
+                console.log(datenow.toString())
+                let currentTime = getRoundedDate(1, datenow);
                 var futureTime = moment(currentTime).add(1,'minute').toDate().toISOString()
                 // 
                 // .replace("Z","+00:00")
-                console.log('start time')
-                console.log(meetingData.start)
+                console.log('current time')
+                console.log(currentTime)
+                console.log('start time of meeting')
+                console.log(datestart)
                 console.log('future time')
                 console.log(futureTime)
-                if(futureTime == meetingData.start){
+                if(datenow < datestart){
                     console.log("Present time is less than start time")
                     //send alert message again onto front end
                     myIo.emit(meetingData.userId,meetingData)
                 }
                 else{
+                    meetingData.job = 'meeting-start'
+                    myIo.emit(meetingData.userId,meetingData)
                     console.log("present time is greater than start time. stopping the alerts")
                 }
-            },10000)
+            },5000)
         })
 
         
@@ -157,7 +177,7 @@ let setServer = (server) => {
             console.log('presenttime')
             console.log(presentTime)
             
-            MeetingModel.find({'start':futureTime}).exec((err,result) => {
+            MeetingModel.find({'start':futureTime,'mailAlert':false}).exec((err,result) => {
         
                 if(err){
                     console.log(err)
@@ -198,8 +218,12 @@ let setServer = (server) => {
                         myIo.emit(alert.userId,alert)
                         console.log("sending mail")
 //send email to user's email
-                        sendEmailLib.sendAlertMessage(alert)
+                        
                         console.log("mail sent successfully")
+                        setTimeout( function (){
+                        eventEmitter.emit("update-mail-status",alert)
+                        sendEmailLib.sendAlertMessage(alert)
+                        },3000)
                     }
                 }
             })
@@ -219,6 +243,50 @@ let setServer = (server) => {
 
     })
 }
+
+
+eventEmitter.on('update-meeting',(data) => {
+    options = data
+    options.mailAlert = false
+    MeetingModel.update({'meetingId':options.meetingId},options,{multi:true}).exec((err,result) => {
+        if(err) {
+            console.log(err);
+            // let apiResponse = response.generate(true,"Error Occured",500,null)
+            // res.send(apiResponse)
+        }
+
+        else if(check.isEmpty(result)){
+            console.log("No Meeting Found")
+            // let apiResponse = response.generate(true,"No Meeting Found",404,null)
+            // res.send(apiResponse)
+        }
+        else{
+            // res.send(result)
+            console.log("Meeting updated successsfully")
+        }
+    })
+})
+
+//updating mail status for meeting to true to depict that mail hass been sent for meeting
+eventEmitter.on('update-mail-status',(data) => {
+    MeetingModel.updateOne({'meetingId':data.meetingId},{$set : {'mailAlert':true}},(err,result) => {
+        if (err) {
+            console.log(err)
+            // let apiResponse = response.generate(true, "Error Occured", 500, null)
+            // reject(apiResponse)
+        }
+        else if (check.isEmpty(result)) {
+            console.log("No User Id found")
+            // let apiResponse = response.generate(true, "No Notifications found", 404, null)
+            // reject(apiResponse)
+        }
+        else {
+            console.log(result)
+            // let apiResponse = response.generate(false, "New password is Update", 200, null)
+            // resolve(apiResponse)
+        }
+    })
+})
  // saving new meetings to database
 eventEmitter.on('save-meeting',(data) => {
     var today = timeLib.now()
@@ -236,7 +304,8 @@ eventEmitter.on('save-meeting',(data) => {
         resizable:data.resizable,
         createdOn:today,
         modifiedOn:today,
-        location:data.location
+        location:data.location,
+        mailAlert:false
     })
     newMeeting.save((err,result) => {
         if(err){

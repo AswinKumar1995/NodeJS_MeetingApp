@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer')
+const sgTransport = require('nodemailer-sendgrid-transport');
 const mongoose = require("mongoose")
 const UserModel = mongoose.model("User")
 const check = require("./checkLib")
@@ -29,27 +30,28 @@ let sendAlertMessage = (meetingData) => {
     })
 }
 
-//using nodemailer to send mail to user's email
+//using nodemailer and sendgrid to send mail to user's email
 let NodemailerSendEmail = (userDetails,meetingData) => {
-    
-    var transporter = nodemailer.createTransport({
-        // service: 'gmail',
-        // port: 465,
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
-        requireTLS: true,
+
+    var options = {
         auth: {
-            user: '*****',
-            pass: '*****'
+            api_user: '***',
+            api_key: '****'
         }
-    });
+    }
+    
+   
+
+
+    var transporter = nodemailer.createTransport(sgTransport(options));
     let timeString = new Date(meetingData.start)
     var mailOptions = {
-        from: '****',
+        from: '***',
         to: userDetails.email, // userEmail
         subject: `Meeting Reminder- Title :  ${meetingData.title}`,
-        text: 'You are receiving this because you (or someone else) have meeting scheduled at '+ timeString + '\n\n' +
+        text: 'You are receiving this because you (or someone else) have meeting scheduled in one minute.'+  '\n\n' +
+            'Meeting Details : '+"\n" + "Title : " + meetingData.title + "\n" + "Meeting Start Time :" + timeString + "\n" +
+            "Created by : " + meetingData.adminName + "\n" + "Location : " + meetingData.location + "\n\n" +
             'Please click on the following link, or paste this into your browser to attend the meeting:\n\n' +
             'http://kiddify.co.in/home/'
     }
