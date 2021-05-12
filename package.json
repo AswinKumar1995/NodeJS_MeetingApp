@@ -22,7 +22,7 @@
     "mongoose": "^5.7.1",
     "morgan": "^1.9.1",
     "node-cron": "^2.0.3",
-    "nodemailer": "^6.4.2",
+    "nodemailer": "^6.4.16",
     "nodemailer-sendgrid-transport": "^0.2.0",
     "pino": "^5.13.3",
     "redis": "^2.8.0",
